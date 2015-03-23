@@ -16,9 +16,8 @@ Spree::CheckoutController.class_eval do
 
       case response.status['status_code']
       when 'SUCCESS'
-        persist_user_address
-        payment_success(payment_method)
-        redirect_to response.redirect_uri
+        persist_user_address # probably it's a dead line I couldn't make it run
+        redirect_to response.redirect_uri if payment_success(payment_method)
       else
         payu_error
       end
