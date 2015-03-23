@@ -11,7 +11,7 @@ class PayuOrder
     end
 
     description = I18n.t('order_description',
-      name: Spree::Config.site_name)
+      name: Spree::Store.current.name)
     description = I18n.transliterate(description)
 
     {

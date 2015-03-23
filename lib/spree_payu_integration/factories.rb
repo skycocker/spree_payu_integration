@@ -6,6 +6,5 @@ FactoryGirl.define do
 
   factory :payu_payment_method, class: Spree::PaymentMethod::Payu do
     name 'PayU'
-    environment 'test'
   end
 end

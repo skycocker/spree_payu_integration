@@ -9,9 +9,9 @@ RSpec.describe Spree::CheckoutController, type: :controller do
 
   before do
     allow(@request).to receive(:remote_ip).and_return("128.0.0.1")
-    controller.stub :try_spree_current_user => user
-    controller.stub :spree_current_user => user
-    controller.stub :current_order => order
+    allow(controller).to receive(:try_spree_current_user).and_return(user)
+    allow(controller).to receive(:spree_current_user).and_return(user)
+    allow(controller).to receive(:current_order).and_return(order)
   end
 
   describe "PATCH /checkout/update/payment" do
@@ -26,7 +26,7 @@ RSpec.describe Spree::CheckoutController, type: :controller do
 
       before do
         # we need to fake it because it's returned back with order
-        allow(SecureRandom).to receive(:uuid).once.and_return("36332498-294f-41a1-980c-7b2ec0e3a8a4")
+        allow(SecureRandom).to receive(:uuid).and_return("36332498-294f-41a1-980c-7b2ec0e3a8a4")
         allow(OpenPayU::Configuration).to receive(:merchant_pos_id).and_return("145278")
         allow(OpenPayU::Configuration).to receive(:signature_key).and_return("S3CRET_KEY")
       end
@@ -39,7 +39,7 @@ RSpec.describe Spree::CheckoutController, type: :controller do
                 merchantPosId: "145278",
                 customerIp: "128.0.0.1",
                 extOrderId: order.id,
-                description: "Order from Spree Demo Site",
+                description: "Order from Spree Test Store",
                 currencyCode: "USD",
                 totalAmount: 2000,
                 orderUrl: "http://test.host/orders/#{order.number}",
@@ -47,13 +47,13 @@ RSpec.describe Spree::CheckoutController, type: :controller do
                 continueUrl: "http://test.host/orders/#{order.number}",
                 buyer: {
                   email: user.email,
-                  phone: "123-456-7890",
+                  phone: "555-555-0199",
                   firstName: "John",
                   lastName: "Doe",
                   language: "PL",
                   delivery: {
                     street: "10 Lovely Street",
-                    postalCode: "20170",
+                    postalCode: "35005",
                     city: "Herndon",
                     countryCode: "US"
                   }
