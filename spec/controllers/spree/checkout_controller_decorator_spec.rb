@@ -1,26 +1,28 @@
 require 'spec_helper'
 
 RSpec.describe Spree::CheckoutController, type: :controller do
-
   # copied from original checkout controller spec
   let(:token) { 'some_token' }
   let(:user) { FactoryGirl.create(:user) }
   let(:order) { OrderWalkthrough.up_to(:delivery) }
 
   before do
-    allow(@request).to receive(:remote_ip).and_return("128.0.0.1")
+    allow_any_instance_of(ActionDispatch::Request).to receive(:remote_ip).and_return("128.0.0.1")
     allow(controller).to receive(:try_spree_current_user).and_return(user)
     allow(controller).to receive(:spree_current_user).and_return(user)
     allow(controller).to receive(:current_order).and_return(order)
   end
 
   describe "PATCH /checkout/update/payment" do
-
     context "when payment_method is PayU" do
-
       let(:payment_method) { FactoryGirl.create :payu_payment_method }
 
-      let(:payment_params) { {state: "payment", order: {payments_attributes: [{payment_method_id: payment_method.id}]}} }
+      let(:payment_params) do
+        {
+          state: "payment",
+          order: { payments_attributes: [{ payment_method_id: payment_method.id }] }
+        }
+      end
 
       subject { spree_post :update, payment_params }
 
@@ -35,38 +37,45 @@ RSpec.describe Spree::CheckoutController, type: :controller do
 
       let!(:payu_order_create) do
         stub_request(:post, "https://145278:S3CRET_KEY@secure.payu.com/api/v2/orders")
-         .with(:body => {
-                merchantPosId: "145278",
-                customerIp: "128.0.0.1",
-                extOrderId: order.id,
-                description: "Order from Spree Test Store",
-                currencyCode: "USD",
-                totalAmount: 2000,
-                orderUrl: "http://test.host/orders/#{order.number}",
-                notifyUrl: "http://test.host/payu/notify",
-                continueUrl: "http://test.host/orders/#{order.number}",
-                buyer: {
-                  email: user.email,
-                  phone: "555-555-0199",
-                  firstName: "John",
-                  lastName: "Doe",
-                  language: "PL",
-                  delivery: {
-                    street: "10 Lovely Street",
-                    postalCode: "35005",
-                    city: "Herndon",
-                    countryCode: "US"
-                  }
-                },
-                products: {
-                  products: [{name: order.line_items.first.product.name, unitPrice: 1000, quantity:1}]
-                },
-                reqId: "{36332498-294f-41a1-980c-7b2ec0e3a8a4}"
+          .with(body:
+            {
+              merchantPosId: "145278",
+              customerIp: "128.0.0.1",
+              extOrderId: order.id,
+              description: "Order from Spree Test Store",
+              currencyCode: "USD",
+              totalAmount: 2000,
+              orderUrl: "http://test.host/orders/#{order.number}",
+              notifyUrl: "http://test.host/payu/notify",
+              continueUrl: "http://test.host/orders/#{order.number}",
+              buyer: {
+                email: user.email,
+                phone: "555-555-0199",
+                firstName: "John",
+                lastName: "Doe",
+                language: "PL",
+                delivery: {
+                  street: "10 Lovely Street",
+                  postalCode: "35005",
+                  city: "Herndon",
+                  countryCode: "US"
+                }
               },
-              headers: {'Content-Type'=>'application/json', 'User-Agent'=>'Ruby'})
+              products: {
+                products: [
+                  { name: order.line_items.first.product.name, unitPrice: 1000, quantity: 1 }
+                ]
+              },
+              reqId: "{36332498-294f-41a1-980c-7b2ec0e3a8a4}"
+            },
+            headers: { 'Content-Type' => 'application/json', 'User-Agent' => 'Ruby' }
+          )
           .to_return(
             status: 200,
-            body: {status: {statusCode: payu_order_create_status}, redirect_uri: "http://payu.com/redirect/url/4321"}.to_json,
+            body: {
+              status: { statusCode: payu_order_create_status },
+              redirect_uri: "http://payu.com/redirect/url/4321"
+            }.to_json,
             headers: {}
           )
       end
@@ -77,7 +86,6 @@ RSpec.describe Spree::CheckoutController, type: :controller do
       end
 
       context "when PayU order creation succeeded" do
-
         it "updates order payment" do
           subject
           payment = order.payments.last
@@ -91,10 +99,10 @@ RSpec.describe Spree::CheckoutController, type: :controller do
         end
 
         context "when payment save failed" do
-
           before do
             allow_any_instance_of(Spree::Payment).to receive(:save).and_return(false)
-            allow_any_instance_of(Spree::Payment).to receive(:errors).and_return(double(full_messages: ["payment save failed"]))
+            allow_any_instance_of(Spree::Payment).to receive(:errors)
+              .and_return(double(full_messages: ["payment save failed"]))
           end
 
           it "logs errors" do
@@ -108,10 +116,10 @@ RSpec.describe Spree::CheckoutController, type: :controller do
         end
 
         context "when order transition failed" do
-
           before do
             allow(order).to receive(:next).and_return(false)
-            allow(order).to receive(:errors).and_return(double(full_messages: ["order cannot transition to this state"]))
+            allow(order).to(receive(:errors)
+              .and_return(double(full_messages: ["order cannot transition to this state"])))
           end
 
           it "logs errors" do
@@ -126,7 +134,6 @@ RSpec.describe Spree::CheckoutController, type: :controller do
       end
 
       context "when PayU order creation returns unexpected status" do
-
         let(:payu_order_create_status) { "FAIL" }
 
         it "logs error in order" do
@@ -140,7 +147,6 @@ RSpec.describe Spree::CheckoutController, type: :controller do
       end
 
       context "when something failed inside PayU order creation" do
-
         before do
           allow(OpenPayU::Order).to receive(:create).and_raise(RuntimeError.new("Payment timeout!"))
         end
@@ -157,7 +163,7 @@ RSpec.describe Spree::CheckoutController, type: :controller do
     end
 
     context "when order attributes are missing" do
-      let(:payment_params) { {state: "payment", order: {some: "details"} } }
+      let(:payment_params) { { state: "payment", order: { some: "details" } } }
       subject { spree_post :update, payment_params }
 
       it "renders checkout state with redirect" do

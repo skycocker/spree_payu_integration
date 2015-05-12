@@ -15,10 +15,10 @@ RSpec.describe PayuOrder, type: :lib do
       allow(Spree::Store).to receive(:current).and_return(current_store)
     end
 
-    subject { described_class.params(order, "128.0.0.1", order_url, notify_url, continue_url)}
+    subject { described_class.params(order, "128.0.0.1", order_url, notify_url, continue_url) }
 
     it "returns well structured hash from real order" do
-      expect(subject).to eq({
+      expect(subject).to eq(
         merchant_pos_id: "145228",
         customer_ip: "128.0.0.1",
         ext_order_id: 1,
@@ -48,7 +48,7 @@ RSpec.describe PayuOrder, type: :lib do
             quantity: 1
           }
         ]
-      })
+      )
 
       expect(subject[:products][0][:name]).to be_present
     end

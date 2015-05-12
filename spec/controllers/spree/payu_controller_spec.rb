@@ -1,17 +1,45 @@
 require 'spec_helper'
 
 RSpec.describe Spree::PayuController, type: :controller do
-
   describe "POST /payu/notify" do
     let!(:order) { OrderWalkthrough.up_to(:address) }
     let(:payment_method) { FactoryGirl.create :payu_payment_method }
     let(:payment) { order.payments.last }
     # real response taken from VCR tape from OpenPayU implementation:
     # https://github.com/PayU/openpayu_ruby/blob/d751ec8db3e97dccf76edd79104f8ae9236e0cbd/spec/cassettes/retrieve_order.yml
-    let(:order_retrieve_data) { {"req_id" => "PAYU-4321", "pageResponse"=>nil, "orders"=>{"orders"=>[{"shippingMethod"=>nil, "description"=>"New order", "fee"=>nil, "status"=>payu_status, "merchantPosId"=>"114207", "notifyUrl"=>"http://localhost/", "customerIp"=>"127.0.0.1", "extOrderId"=>order.id, "totalAmount"=>100, "buyer"=>nil, "orderCreateDate"=>1401265500678, "orderUrl"=>"http://localhost/", "validityTime"=>48000, "payMethod"=>nil, "products"=>{"products"=>[{"version"=>nil, "code"=>nil, "subMerchantId"=>nil, "categoryId"=>nil, "categoryName"=>nil, "quantity"=>1, "unitPrice"=>100, "extraInfo"=>nil, "weight"=>nil, "discount"=>nil, "name"=>"Mouse", "size"=>nil}]}, "currencyCode"=>"PLN", "orderId"=>"MHQ3MRZKSQ140528GUEST000P01"}]}, "version"=>"2.0", "redirectUri"=>nil, "status"=>{"code"=>nil, "codeLiteral"=>nil, "statusCode"=>"SUCCESS", "statusDesc"=>"Request processing successful", "severity"=>nil, "location"=>nil}, "resId"=>nil, "properties"=>nil} }
+    let(:order_retrieve_data) do
+      {
+        "req_id" => "PAYU-4321", "pageResponse" => nil, "orders" => {
+          "orders" => [{
+            "shippingMethod" => nil, "description" => "New order", "fee" => nil,
+            "status" => payu_status, "merchantPosId" => "114207",
+            "notifyUrl" => "http://localhost/", "customerIp" => "127.0.0.1",
+            "extOrderId" => order.id, "totalAmount" => 100, "buyer" => nil,
+            "orderCreateDate" => 1_401_265_500_678, "orderUrl" => "http://localhost/",
+            "validityTime" => 48_000, "payMethod" => nil,
+            "products" => {
+              "products" => [{
+                "version" => nil, "code" => nil, "subMerchantId" => nil,
+                "categoryId" => nil, "categoryName" => nil, "quantity" => 1,
+                "unitPrice" => 100, "extraInfo" => nil, "weight" => nil,
+                "discount" => nil, "name" => "Mouse", "size" => nil
+              }]
+            }, "currencyCode" => "PLN", "orderId" => "MHQ3MRZKSQ140528GUEST000P01"
+          }]
+        },
+        "version" => "2.0", "redirectUri" => nil,
+        "status" => {
+          "code" => nil, "codeLiteral" => nil, "statusCode" => "SUCCESS",
+          "statusDesc" => "Request processing successful", "severity" => nil,
+          "location" => nil
+        }, "resId" => nil, "properties" => nil
+      }
+    end
     let(:payu_status) { "NEW" }
 
-    let(:fake_http_response) { double(:fake_response, code: "200", body: order_retrieve_data.to_json) }
+    let(:fake_http_response) do
+      double(:fake_response, code: "200", body: order_retrieve_data.to_json)
+    end
 
     before do
       order.payments.create!(payment_method: payment_method, amount: order.total)
@@ -19,17 +47,23 @@ RSpec.describe Spree::PayuController, type: :controller do
       allow(OpenPayU::Configuration).to receive(:merchant_pos_id).and_return("145278")
       allow(OpenPayU::Configuration).to receive(:signature_key).and_return("S3CRET_KEY")
 
-      stub_request(:get, "https://145278:S3CRET_KEY@secure.payu.com/api/v2/orders/R1234").
-        with(headers: {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Content-Type'=>'application/json', 'User-Agent'=>'Ruby'}).
-        to_return(status: 200, body: order_retrieve_data.to_json, headers: {})
+      stub_request(:get, "https://145278:S3CRET_KEY@secure.payu.com/api/v2/orders/R1234")
+        .with(headers:
+          {
+            'Accept-Encoding' => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
+            'Content-Type' => 'application/json',
+            'User-Agent' => 'Ruby'
+          }
+        )
+        .to_return(status: 200, body: order_retrieve_data.to_json, headers: {})
     end
 
-    subject { spree_post :notify, order: {orderId: "R1234"} }
+    subject { spree_post :notify, order: { orderId: "R1234" } }
 
     it "returns correct response for PayU" do
       subject
       expect(response.body).to eq(
-        {"resId" => "PAYU-4321", "status" => {"statusCode" => "SUCCESS"}}.to_json
+        { "resId" => "PAYU-4321", "status" => { "statusCode" => "SUCCESS" } }.to_json
       )
     end
 
@@ -101,5 +135,3 @@ RSpec.describe Spree::PayuController, type: :controller do
     end
   end
 end
-
-
