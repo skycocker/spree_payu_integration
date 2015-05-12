@@ -155,5 +155,19 @@ RSpec.describe Spree::CheckoutController, type: :controller do
         end
       end
     end
+
+    context "when order attributes are missing" do
+      let(:payment_params) { {state: "payment", order: {some: "details"} } }
+      subject { spree_post :update, payment_params }
+
+      it "renders checkout state with redirect" do
+        expect(subject).to redirect_to "http://test.host/checkout/payment"
+      end
+
+      it "logs error" do
+        subject
+        expect(flash[:error]).to include("No payment found")
+      end
+    end
   end
 end
