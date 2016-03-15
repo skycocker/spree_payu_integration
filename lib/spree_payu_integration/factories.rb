@@ -3,4 +3,8 @@ FactoryGirl.define do
   #
   # Example adding this to your spec_helper will load these Factories for use:
   # require 'spree_payu_integration/factories'
+
+  factory :payu_payment_method, class: Spree::PaymentMethod::Payu do
+    name 'PayU'
+  end
 end

@@ -1,11 +1,12 @@
 Spree::CheckoutController.class_eval do
 
-  before_filter :pay_with_payu, only: :update
+  before_action :pay_with_payu, only: :update
 
   private
 
   def pay_with_payu
     return unless params[:state] == 'payment'
+    return if params[:order].blank? || params[:order][:payments_attributes].blank?
 
     pm_id = params[:order][:payments_attributes].first[:payment_method_id]
     payment_method = Spree::PaymentMethod.find(pm_id)
@@ -16,9 +17,7 @@ Spree::CheckoutController.class_eval do
 
       case response.status['status_code']
       when 'SUCCESS'
-        persist_user_address
-        payment_success(payment_method)
-        redirect_to response.redirect_uri
+        redirect_to response.redirect_uri if payment_success(payment_method)
       else
         payu_error
       end
