@@ -11,6 +11,8 @@ Gem::Specification.new do |s|
   s.email     = 'hi@netguru.co'
   s.homepage  = 'https://github.com/netguru/spree_payu_integration'
 
+  s.post_install_message = 'spree_payu_integration on branch master is now for development only - use specific branch e. g. `2-1-stable` for Spree in 2.1 version'
+
   s.require_path = 'lib'
   s.requirements << 'none'
 
