@@ -15,7 +15,7 @@ class PayuOrder
     description = I18n.transliterate(description)
 
     {
-      merchant_pos_id: OpenPayU::Configuration.merchant_pos_id,
+      merchant_pos_id: ::OpenPayU::Configuration.merchant_pos_id,
       customer_ip: ip,
       ext_order_id: order.id,
       description: description,
