@@ -1,3 +1,6 @@
+module Spree::CheckoutControllerDecorator
+end
+
 Spree::CheckoutController.class_eval do
 
   before_action :pay_with_payu, only: :update
